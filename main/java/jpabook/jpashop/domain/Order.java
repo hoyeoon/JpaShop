@@ -19,14 +19,14 @@ public class Order {
     @Column(name = "order_id")
     private Long id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name="member_id")
     private Member member;
 
-    @OneToMany(mappedBy = "order")
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
     private List<OrderItem> orderItems = new ArrayList<>();
 
-    @OneToOne   // OneToOne 일대일 관계에서는 자주 사용되는 테이블에 FK를 두자. (어디에 두든 동작은 하지만 자주 쓰는걸 연관관계의 주인으로 정하자)
+    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)   // OneToOne 일대일 관계에서는 자주 사용되는 테이블에 FK를 두자. (어디에 두든 동작은 하지만 자주 쓰는걸 연관관계의 주인으로 정하자)
     @JoinColumn(name="delivery_id")
     private Delivery delivery;
 
