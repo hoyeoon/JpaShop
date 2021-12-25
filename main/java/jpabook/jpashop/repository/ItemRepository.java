@@ -17,7 +17,7 @@ public class ItemRepository {
         if(item.getId() == null){
             em.persist(item);
         } else {
-            em.merge(item);
+            em.merge(item); // 데이터를 변경할 때, 모든 값을 교체. 값이 들어가지 않는 필드에 대해서 null로 갈아 치움. 실무에서 쓰기 위험함. merge 대신 변경 감지 기능을 쓰자.
         }
     }
 
