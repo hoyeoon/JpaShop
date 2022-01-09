@@ -41,4 +41,17 @@ public class MemberService {
     public Member findOne(Long memberId){
         return memberRepository.findOne(memberId);
     }
+
+    /**
+     * return 값을 Member로 주지 않는 이유
+     * command와 query를 철저히 분리하기 위해서.
+     * update를 하면서 Member를 query하는 꼴이 되버린다.
+     * 그래서 void로 끝내던지, id값 정도만 반환한다.
+     * 유지보수성 향상
+     */
+    @Transactional
+    public void update(Long id, String name) {
+        Member member = memberRepository.findOne(id);
+        member.setName(name);
+    }
 }
