@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.validation.Valid;
 import javax.validation.constraints.NotEmpty;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @RestController // @Controller @ResponseBody 합친 것
 @RequiredArgsConstructor
@@ -37,11 +38,6 @@ public class MemberApiController {
         return new CreateMemberResponse(id);
     }
 
-    @GetMapping("/api/v1/members")
-    public List<Member> membersV1(){
-        return memberService.findMembers();
-    }
-
     @PostMapping("/api/v2/members")
     public CreateMemberResponse saveMemberV2(@RequestBody @Valid CreateMemberRequest request){
 
@@ -50,6 +46,38 @@ public class MemberApiController {
 
         Long id = memberService.join(member);
         return new CreateMemberResponse(id);
+    }
+
+    /**
+     * 조회도 마찬가지로 이와 같은 방식이 아니라 DTO를 따로 만들어 반환해야 한다.
+     */
+    @GetMapping("/api/v1/members")
+    public List<Member> membersV1() {
+        return memberService.findMembers();
+    }
+
+    @GetMapping("/api/v2/members")
+    public Result membersV2() {
+        List<Member> findMembers = memberService.findMembers();
+        // Entity를 DTO로 변경
+        List<MemberDto> collect = findMembers.stream()
+                .map(m -> new MemberDto(m.getName()))
+                .collect(Collectors.toList());
+
+        return new Result(collect.size(), collect);
+    }
+
+    @Data
+    @AllArgsConstructor
+    static class Result<T> {
+        private int count;
+        private T data;
+    }
+
+    @Data
+    @AllArgsConstructor
+    static class MemberDto {
+        private String name;
     }
 
     @PutMapping("/api/v2/members/{id}")
