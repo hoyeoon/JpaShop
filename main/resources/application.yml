@@ -7,7 +7,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: none  # create(RUN할 때 테이블 초기화)
+      ddl-auto: create  # create(RUN할 때 테이블 초기화)
     properties:
       hibernate:
 #        show_sql:  true # System.out을 통해 찍는 것이므로 사용 X. 아래 'org.hibernate.SQL: debug'가 logger를 통해 찍음
