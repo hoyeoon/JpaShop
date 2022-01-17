@@ -8,7 +8,6 @@ import lombok.Setter;
 import javax.persistence.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 import static javax.persistence.FetchType.*;
@@ -24,6 +23,12 @@ public class Order {
     @Column(name = "order_id")
     private Long id;
 
+    /** @JsonIgnore 하지 않았을 때 - Type definition error(proxy로 인해)
+     * 사실은 private Member member = new ByteBuddyInterceptor(); 코드가 대신 들어가 있다.
+     *
+     * [문제 해결 방법]
+     * -> jackson-datatype-hibernate5 라이브러리 추가
+     */
     @ManyToOne(fetch = LAZY)
     @JoinColumn(name="member_id")
     private Member member;
