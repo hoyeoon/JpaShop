@@ -5,6 +5,8 @@ import jpabook.jpashop.domain.Order;
 import jpabook.jpashop.domain.OrderStatus;
 import jpabook.jpashop.repository.OrderRepository;
 import jpabook.jpashop.repository.OrderSerach;
+import jpabook.jpashop.repository.order.simplequery.OrderSimpleQueryDto;
+import jpabook.jpashop.repository.order.simplequery.OrderSimpleQueryRepository;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -12,7 +14,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.*;
 
@@ -27,6 +28,7 @@ import static java.util.stream.Collectors.*;
 public class OrderSimpleApiController {
 
     private final OrderRepository orderRepository;
+    private final OrderSimpleQueryRepository orderSimpleQueryRepository;
 
     /**
      * V1 : 엔티티를 Order로 반환 했다. - 엔티티 변경 시 API 스펙이 변경되므로 잘못된 방식
@@ -47,7 +49,7 @@ public class OrderSimpleApiController {
     }
 
     /**
-     * V2 - 엔티티를 DTO로 반환했다. 하지만 N + 1 문제가 존재
+     * V2 : 엔티티를 DTO로 반환했다. 하지만 N + 1 문제가 존재
      */
     @GetMapping("/api/v2/simple-orders")
     public List<SimpleOrderDto> ordersV2() {
@@ -84,10 +86,36 @@ public class OrderSimpleApiController {
     public List<SimpleOrderDto> ordersV3() {
         List<Order> orders = orderRepository.findAllWithMemberDelivery();
         List<SimpleOrderDto> result = orders.stream()
-                .map(o -> new SimpleOrderDto(o))
+                .map(SimpleOrderDto::new)
                 .collect(toList());
 
         return result;
+    }
+
+    /**
+     * V4 : JPA에서 DTO로 바로 조회.
+     * 엔티티를 조회해서(orderRepository.findAllWithMemberDelivery())
+     * 중간에 dto로 변환(map(SimpleOrderDto::new))하지 않고
+     * 바로 JPA에서 바로 조회하면 조금 더 성능 향상을 시킬 수 있다.
+     *
+     * Trade-off (V3 vs V4)
+     * V3
+     * - 데이터 변경이 가능하기 때문에 재사용성이 좋다.
+     * V4
+     * - 일반적인 sql을 사용할 때 처럼 원하는 값을 선택해서 조회
+     * - new 명령어를 사용해서 JPQL의 결과를 DTO로 즉시 변환
+     * - SELECT 절에서 원하는 데이터를 직접 선택하므로 DB -> 애플리케이션 네트웍 용량 최적화(생각보다 미비)
+     * - 리포지토리 재사용성이 떨어짐. API 스펙에 맞춘 코드가 리포지토리에 들어가는 단점
+     *
+     * 쿼리 방식 선택 권장 순서
+     * 1. 우선 엔티티를 DTO로 변환하는 방법을 선택한다.(V2)
+     * 2. 필요하면 fetch join으로 성능을 최적화 한다.(V3)
+     * 3. 그래도 안되면 DTO로 직접 조회하는 방법을 사용한다. (V4)
+     * 4. 최후의 방법은 JPA가 제공하는 native SQL이나, spring jdbc template을 사용하여 SQL을 직접 사용한다.
+     */
+    @GetMapping("/api/v4/simple-orders")
+    public List<OrderSimpleQueryDto> ordersV4() {
+        return orderSimpleQueryRepository.findOrderDtos();
     }
 
     // 엔티티를 DTO로 변환하는 일반적인 방법
