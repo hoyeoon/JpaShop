@@ -37,10 +37,11 @@ public class OrderRepository {
     }
 
     public List<Order> findAllByString(OrderSerach orderSearch) {
-    //language=JPAQL
+        // language=JPAL
         String jpql = "select o From Order o join o.member m";
         boolean isFirstCondition = true;
-    //주문 상태 검색
+
+        // 주문 상태 검색
         if (orderSearch.getOrderStatus() != null) {
             if (isFirstCondition) {
                 jpql += " where";
@@ -50,7 +51,8 @@ public class OrderRepository {
             }
             jpql += " o.status = :status";
         }
-//회원 이름 검색
+
+        // 회원 이름 검색
         if (StringUtils.hasText(orderSearch.getMemberName())) {
             if (isFirstCondition) {
                 jpql += " where";
@@ -77,13 +79,14 @@ public class OrderRepository {
         Root<Order> o = cq.from(Order.class);
         Join<Order, Member> m = o.join("member", JoinType.INNER); //회원과 조인
         List<Predicate> criteria = new ArrayList<>();
-//주문 상태 검색
+
+        // 주문 상태 검색
         if (orderSearch.getOrderStatus() != null) {
             Predicate status = cb.equal(o.get("status"),
                     orderSearch.getOrderStatus());
             criteria.add(status);
         }
-//회원 이름 검색
+        // 회원 이름 검색
         if (StringUtils.hasText(orderSearch.getMemberName())) {
             Predicate name =
                     cb.like(m.<String>get("name"), "%" +
@@ -93,5 +96,18 @@ public class OrderRepository {
         cq.where(cb.and(criteria.toArray(new Predicate[criteria.size()])));
         TypedQuery<Order> query = em.createQuery(cq).setMaxResults(1000); //최대 1000건
         return query.getResultList();
+    }
+
+    /**
+     * fetch Join
+     * - 실무의 성능 문제 90% (N + 1) 문제를 해결 가능
+     * - fetch = LAZY 를 기본적으로 까는데 이를 무시하고 이 경우에는 객체에 값을 다 채워서 (프록시 아님) 값을 한 방에 가져온다.
+     */
+    public List<Order> findAllWithMemberDelivery() {
+        return em.createQuery(
+                "select o from Order o" +   // 1. Order를 조회할 때
+                        " join fetch o.member" +   // 2. 객체그래프로 member 까지 한 방에 가져온다.
+                        " join fetch o.delivery d", Order.class // 3. 객체그래프로 delivery 까지 한 방에 가져온다.
+        ).getResultList();
     }
 }
