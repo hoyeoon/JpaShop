@@ -28,13 +28,23 @@ public class OrderQueryRepository {
         return result;
     }
 
+    /**
+     * 쿼리를 in 절로 한 번 날리고, 메모리에서 Map을 가져온 다음에 메모리에서 값을 매칭하여 세팅한다.
+     * 쿼리는 총 2번 나간다.
+     */
     public List<OrderQueryDto> findAllByDto_optimization() {
-        List<OrderQueryDto> result = findOrders();  // Query 1번
+        List<OrderQueryDto> result = findOrders();  // Query 루트 1번
 
-        List<Long> orderIds = result.stream()
-                .map(o -> o.getOrderId())
-                .collect(Collectors.toList());
+        List<Long> orderIds = toOrderIds(result);
 
+        Map<Long, List<OrderItemQueryDto>> orderItemMap = findOrderItemMap(orderIds); // Query 컬렉션 1번
+
+        result.forEach(o -> o.setOrderItems(orderItemMap.get(o.getOrderId())));
+
+        return result;
+    }
+
+    private Map<Long, List<OrderItemQueryDto>> findOrderItemMap(List<Long> orderIds) {
         List<OrderItemQueryDto> orderItems = em.createQuery(
                 "select new jpabook.jpashop.repository.order.query.OrderItemQueryDto(oi.order.id, i.name, oi.orderPrice, oi.count)" +
                         " from OrderItem oi" +
@@ -45,8 +55,14 @@ public class OrderQueryRepository {
 
         Map<Long, List<OrderItemQueryDto>> orderItemMap = orderItems.stream()
                 .collect(Collectors.groupingBy(OrderItemQueryDto::getOrderId));
+        return orderItemMap;
+    }
 
-        result.forEach(o -> o.setOrderItems(orderItemMap.get(o.getOrderId())));
+    private List<Long> toOrderIds(List<OrderQueryDto> result) {
+        List<Long> orderIds = result.stream()
+                .map(o -> o.getOrderId())
+                .collect(Collectors.toList());
+        return orderIds;
     }
 
     private List<OrderItemQueryDto> findOrderItems(Long orderId) {
