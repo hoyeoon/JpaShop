@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.*;
 
@@ -74,7 +73,7 @@ public class OrderApiController {
 
     /**
      * V3 : fetch join으로 성능 최적화를 하여 N + 1 문제 해결
-     * 이슈) findAllWithItem 에서 작성한 JPAL에서 distinct가 없을 경우 -> POSTMAN 결과가 2배로 뻥튀기 됨
+     * 이슈) findAllWithItem 에서 작성한 JPQL에서 distinct가 없을 경우 -> POSTMAN 결과가 2배로 뻥튀기 됨
      * 
      * ※ 단점 - 컬렉션 fetch join을 사용하면 페이징 불가능
      * 참고 : Hibernate는 경고 로그를 남기면서 모든 데이터를 DB에서 읽어오고, 메모리에서 페이징 해버린다(매우 위험하다!!)
@@ -157,10 +156,19 @@ public class OrderApiController {
      * - ToMany (1:N) 관계는 조인하면 row 수가 증가한다.
      * row 수가 증가하지 않는 ToOne 관계는 조인으로 최적화 하기 쉬우므로 한번에 조회하고, ToMany 관계는
      * 최적화하기 어려우므로 findOrderItems() 같은 별도의 메서드로 조회한다.
+     *
+     * findOrderQueryDtos() 메서드에서 loop을 돌며 N + 1 문제 존재
      */
     @GetMapping("/api/v4/orders")
     public List<OrderQueryDto> ordersV4() {
         return orderQueryRepository.findOrderQueryDtos();
+    }
+
+    @GetMapping("/api/v5/orders")
+    public List<OrderQueryDto> ordersV5() {
+        return orderQueryRepository.findAllByDto_optimization() {
+
+        }
     }
 
     @Getter
